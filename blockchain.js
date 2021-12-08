@@ -6,7 +6,7 @@ class Blockchain {
         this.chain = [Block.genesis()];
     }
     static isValidChain(chain) {
-        if (JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis())) {
+        if (Object.entries(chain[0]).sort().toString() !== Object.entries(Block.genesis()).sort().toString()) {
             return false;
         }
         for (let i = 1; i < chain.length; i++) {
@@ -25,6 +25,11 @@ class Blockchain {
             data
         });
         this.chain.push(newBlock);
+    }
+    replaceChain(chain) {
+        if (chain.length > this.chain.length && Blockchain.isValidChain(chain)) {
+            this.chain = chain;
+        }
     }
 }
 
