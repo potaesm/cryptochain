@@ -1,11 +1,14 @@
 const { STARTING_BALANCE } = require('../config');
-const { ec } = require('../util/elliptic-cryptography');
+const { ec, cryptoHash } = require('../util');
 
 class Wallet {
     constructor() {
-        const keyPair = ec.genKeyPair();
+        this.keyPair = ec.genKeyPair();
         this.balance = STARTING_BALANCE;
-        this.publicKey = keyPair.getPublic();
+        this.publicKey = this.keyPair.getPublic().encode('hex');
+    }
+    sign(data) {
+        return this.keyPair.sign(cryptoHash(data));
     }
 }
 

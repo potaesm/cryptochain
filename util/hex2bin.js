@@ -1,4 +1,4 @@
-function hex2bin(hex) {
+const hex2bin = (hex) => {
     hex = hex.replace('0x', '').toLowerCase();
     let out = '';
     for (const c of hex) {
@@ -23,6 +23,6 @@ function hex2bin(hex) {
         }
     }
     return out;
-}
+};
 
 module.exports = hex2bin;

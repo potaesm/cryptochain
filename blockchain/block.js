@@ -1,6 +1,5 @@
 const { GENESIS_DATA, MINE_RATE } = require('../config');
-const cryptoHash = require('../util/crypto-hash');
-const hex2bin = require('../util/hex2bin');
+const { cryptoHash, hex2bin } = require('../util');
 
 class Block {
     constructor({ timestamp, lastHash, data, nonce, difficulty, hash }) {
