@@ -9,7 +9,7 @@ describe('Blockchain', () => {
         newChain = new Blockchain();
         originalChain = blockchain.chain;
     });
-    it('contains a chain Array instance', () => {
+    it('contains a `chain` that is the `Array` instance', () => {
         expect(blockchain.chain instanceof Array).toBe(true);
     });
     it('starts with the genesis block', () => {
@@ -33,7 +33,7 @@ describe('Blockchain', () => {
                 blockchain.addBlock({ data: 'Musitmani' });
                 blockchain.addBlock({ data: 'Potae' });
             });
-            describe('and a lashHash reference has changed', () => {
+            describe('and a `lashHash` reference has changed', () => {
                 it('returns false', () => {
                     blockchain.chain[2].lastHash = 'broken-lastHash';
                     expect(Blockchain.isValidChain(blockchain.chain)).toBe(false);
