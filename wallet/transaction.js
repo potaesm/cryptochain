@@ -7,6 +7,19 @@ class Transaction {
         this.outputMap = this.createOutputMap({ senderWallet, recipient, amount });
         this.input = this.createInput({ senderWallet, outputMap: this.outputMap });
     }
+    static isValidTransaction(transaction) {
+        const { input: { address, amount, signature }, outputMap } = transaction;
+        const outputTotal = Object.values(outputMap).reduce((prevValue, currentValue) => prevValue + currentValue);
+        if (amount !== outputTotal) {
+            console.error(`Invalid transaction from ${address}`);
+            return false;
+        }
+        if (!verifySignature({ publicKey: address, data: outputMap, signature })) {
+            console.error(`Invalid signature from ${address}`);
+            return false;
+        }
+        return true;
+    }
     createOutputMap({ senderWallet, recipient, amount }) {
         const outputMap = {};
         outputMap[recipient] = amount;
@@ -21,18 +34,17 @@ class Transaction {
             signature: senderWallet.sign(outputMap)
         };
     }
-    static isValidTransaction(transaction) {
-        const { input: { address, amount, signature }, outputMap } = transaction;
-        const outputTotal = Object.values(outputMap).reduce((prevValue, currentValue) => prevValue + currentValue);
-        if (amount !== outputTotal) {
-            console.error(`Invalid transaction from ${address}`);
-            return false;
+    update({ senderWallet, recipient, amount }) {
+        if (amount > this.outputMap[senderWallet.publicKey]) {
+            throw new Error('Amount exceeds balance');
         }
-        if (!verifySignature({ publicKey: address, data: outputMap, signature })) {
-            console.error(`Invalid signature from ${address}`);
-            return false;
+        if (!this.outputMap[recipient]) {
+            this.outputMap[recipient] = amount;
+        } else {
+            this.outputMap[recipient] = this.outputMap[recipient] + amount;
         }
-        return true;
+        this.outputMap[senderWallet.publicKey] = this.outputMap[senderWallet.publicKey] - amount;
+        this.input = this.createInput({ senderWallet, outputMap: this.outputMap });
     }
 }
 
