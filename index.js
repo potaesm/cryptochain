@@ -2,9 +2,13 @@ const express = require('express');
 const axios = require('axios');
 const Blockchain = require('./blockchain');
 const PubSub = require('./app/pubsub');
+const Wallet = require('./wallet');
+const TransactionPool = require('./wallet/transaction-pool');
 
 const blockchain = new Blockchain();
-const pubsub = new PubSub({ blockchain });
+const transactionPool = new TransactionPool();
+const wallet = new Wallet();
+const pubsub = new PubSub({ blockchain, transactionPool, wallet });
 
 const DEFAULT_PORT = 3000;
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
@@ -24,17 +28,46 @@ app.post('/api/mine', (request, response) => {
     response.redirect('/api/blocks');
 });
 
-function syncChains() {
+app.post('/api/transact', (request, response) => {
+    const { amount, recipient } = request.body;
+    let transaction = transactionPool.getExistingTransaction({ inputAddress: wallet.publicKey });
+    try {
+        if (!!transaction) {
+            transaction.update({ senderWallet: wallet, recipient, amount });
+        } else {
+            transaction = wallet.createTransaction({ recipient, amount });
+        }
+    } catch (error) {
+        return response.status(400).json({ type: 'error', message: error.message });
+    }
+    transactionPool.setTransaction(transaction);
+    pubsub.broadcastTransaction(transaction);
+    response.json({ type: 'success', transaction });
+});
+
+app.get('/api/transaction-pool-map', (request, response) => {
+    response.json(transactionPool.transactionMap);
+});
+
+const syncWithRootState = () => {
     const config = {
         baseURL: ROOT_NODE_ADDRESS,
-        url: '/api/blocks',
         method: 'get'
     };
-    axios(config)
+    axios({ ...config, url: '/api/blocks' })
         .then((response) => {
             const rootChain = response.data;
             console.log('replace chain on a sync with', rootChain);
             blockchain.replaceChain(rootChain);
+        })
+        .catch((error) => {
+            console.log(error.message);
+        });
+    axios({ ...config, url: '/api/transaction-pool-map' })
+        .then((response) => {
+            const rootTransactionPoolMap = response.data;
+            console.log('replace transaction pool map on a sync with', rootTransactionPoolMap);
+            transactionPool.setMap(rootTransactionPoolMap);
         })
         .catch((error) => {
             console.log(error.message);
@@ -50,6 +83,6 @@ if (process.env.GENERATE_PEER_PORT === 'true') {
 app.listen(PEER_PORT, () => {
     console.log(`listening on localhost:${PEER_PORT}`);
     if (PEER_PORT !== DEFAULT_PORT) {
-        syncChains();
+        syncWithRootState();
     }
 });

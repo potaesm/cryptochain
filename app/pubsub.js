@@ -18,12 +18,15 @@ const options = {
 // };
 const CHANNELS = {
     TEST: 'TEST',
-    BLOCKCHAIN: 'BLOCKCHAIN'
+    BLOCKCHAIN: 'BLOCKCHAIN',
+    TRANSACTION: 'TRANSACTION'
 };
 
 class PubSub {
-    constructor({ blockchain }) {
+    constructor({ blockchain, transactionPool, wallet }) {
         this.blockchain = blockchain;
+        this.transactionPool = transactionPool;
+        this.wallet = wallet;
 
         this.publisher = mqtt.connect(url, options);
         this.subscriber = mqtt.connect(url, options);
@@ -33,9 +36,20 @@ class PubSub {
     }
     handleMessage(channel, message) {
         const parsedMessage = JSON.parse(message.toString());
-        if (channel === CHANNELS.BLOCKCHAIN) {
-            console.log(this.blockchain);
-            this.blockchain.replaceChain(parsedMessage);
+        switch(channel) {
+            case CHANNELS.BLOCKCHAIN: {
+                this.blockchain.replaceChain(parsedMessage);
+                break;
+            }
+            case CHANNELS.TRANSACTION: {
+                console.log(this.transactionPool.getExistingTransaction({ inputAddress: this.wallet.publicKey }));
+                if (!this.transactionPool.getExistingTransaction({ inputAddress: this.wallet.publicKey })) {
+                    this.transactionPool.setTransaction(parsedMessage);
+                }
+                break;
+            }
+            default:
+                return;
         }
         // this.subscriber.end();
     }
@@ -51,6 +65,9 @@ class PubSub {
     }
     broadcastChain() {
         this.publish({ channel: CHANNELS.BLOCKCHAIN, message: JSON.stringify(this.blockchain.chain) });
+    }
+    broadcastTransaction(transaction) {
+        this.publish({ channel: CHANNELS.TRANSACTION, message: JSON.stringify(transaction) });
     }
 }
 
