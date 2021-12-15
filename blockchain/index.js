@@ -30,10 +30,13 @@ class Blockchain {
         });
         this.chain.push(newBlock);
     }
-    replaceChain(chain) {
+    replaceChain(chain, onSuccess) {
         if (chain.length > this.chain.length && Blockchain.isValidChain(chain)) {
+            if (!!onSuccess) {
+                onSuccess();
+            }
             this.chain = chain;
-            console.log('the chain is replaced');
+            console.log('the chain is replaced', this.chain);
         } else {
             console.error('the chain is not replaced');
         }

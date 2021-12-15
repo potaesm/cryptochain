@@ -4,11 +4,13 @@ const Blockchain = require('./blockchain');
 const PubSub = require('./app/pubsub');
 const Wallet = require('./wallet');
 const TransactionPool = require('./wallet/transaction-pool');
+const TransactionMiner = require('./app/transaction-miner');
 
 const blockchain = new Blockchain();
 const transactionPool = new TransactionPool();
 const wallet = new Wallet();
 const pubsub = new PubSub({ blockchain, transactionPool, wallet });
+const transactionMiner = new TransactionMiner({ blockchain, transactionPool, wallet, pubsub });
 
 const DEFAULT_PORT = 3000;
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
@@ -47,6 +49,11 @@ app.post('/api/transact', (request, response) => {
 
 app.get('/api/transaction-pool-map', (request, response) => {
     response.json(transactionPool.transactionMap);
+});
+
+app.get('/api/mine-transactions', (request, response) => {
+    transactionMiner.mineTransactions();
+    response.redirect('/api/blocks');
 });
 
 const syncWithRootState = () => {
